@@ -12,8 +12,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include "reven-vmi.h"
-#include "vmiclient.h"
+#include <rvnvmicomm_common/reven-vmi.h>
+#include <rvnvmicomm_client/vmiclient.h>
 
 static inline ssize_t recv_nonblock(int sockfd, void *buf, size_t len)
 {
