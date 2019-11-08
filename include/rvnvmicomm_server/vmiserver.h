@@ -10,31 +10,31 @@ extern "C" {
 
 // users should override following functions...
 
-extern int vmiserver_start(const char *device) __attribute__((nonnull(1), weak));
+extern int vmis_start(const char *device) __attribute__((nonnull(1)));
 
-extern void enable_sync_wait() __attribute__((weak));
-extern void disable_sync_wait() __attribute__((weak));
+extern void vmis_cb_enable_sync_wait();
+extern void vmis_cb_disable_sync_wait();
 
-extern void put_response(const uint8_t *buf, uint32_t size) __attribute__((weak));
+extern void vmis_cb_put_response(const uint8_t *buf, uint32_t size);
 
-extern int read_virtual_memory(uint64_t va, uint32_t len, uint8_t * buffer) __attribute__((nonnull(3), weak));
-extern int read_register(int32_t reg_group, int32_t reg_id, uint64_t * reg_val) __attribute__((nonnull(3), weak));
+extern int vmis_cb_read_virtual_memory(uint64_t va, uint32_t len, uint8_t * buffer);
+extern int vmis_cb_read_register(int32_t reg_group, int32_t reg_id, uint64_t * reg_val);
 
-extern int set_breakpoint(uint64_t va) __attribute__((weak));
-extern int remove_breakpoint(uint64_t va) __attribute__((weak));
-extern int remove_all_breakpoints(void) __attribute__((weak));
+extern int vmis_cb_set_breakpoint(uint64_t va);
+extern int vmis_cb_remove_breakpoint(uint64_t va);
+extern int vmis_cb_remove_all_breakpoints(void);
 
-extern int set_watchpoint(uint64_t va, uint32_t len, int wp) __attribute__((weak));
-extern int remove_watchpoint(uint64_t va, uint32_t len) __attribute__((weak));
-extern int remove_all_watchpoints(void) __attribute__((weak));
+extern int vmis_cb_set_watchpoint(uint64_t va, uint32_t len, int wp);
+extern int vmis_cb_remove_watchpoint(uint64_t va, uint32_t len);
+extern int vmis_cb_remove_all_watchpoints(void);
 
-extern int pause_vm(void) __attribute__((weak));
-extern int step_vm(void) __attribute__((weak));
-extern int continue_async_vm(void) __attribute__((weak));
+extern int vmis_cb_pause_vm(void);
+extern int vmis_cb_step_vm(void);
+extern int vmis_cb_continue_async_vm(void);
 
 // so they can use the following function
 
-extern void handle_request(const vmi_request_t *req);
+extern void vmis_handle_request(const vmi_request_t *req);
 
 #ifdef __cplusplus
 }
