@@ -18,7 +18,7 @@ BOOST_AUTO_TEST_CASE(test_read_memory)
 	int err;
 
 	if (pid == 0) {
-		err = vmiserver_start(socket_path);
+		err = vmis_start(socket_path);
 		BOOST_REQUIRE(err == 0);
 	} else {
 		while (access(socket_path, F_OK) != 0) {

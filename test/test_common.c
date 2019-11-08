@@ -11,16 +11,49 @@
 #include <pthread.h>
 
 #include <rvnvmicomm_common/reven-vmi.h>
-// #include <rvnvmicomm_server/vmiserver.h>
+#include <rvnvmicomm_server/vmiserver.h>
 #include <rvnvmicomm_client/vmiclient.h>
 
-extern void handle_request(const vmi_request_t *req);
+#define unused(x) (void)x
 
 // implement server support functions
 
 static int server_sockfd = -1;
 static int client_sockfd = -1;
 static pthread_t vmiserver_thread;
+static void *vmiserver(void *args);
+
+int vmis_start(const char *device)
+{
+	server_sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (server_sockfd < 0) {
+		return -1; // error
+	}
+
+	struct sockaddr_un sock_addr = {
+		.sun_family = AF_UNIX,
+	};
+	snprintf(sock_addr.sun_path, sizeof(sock_addr.sun_path), "%s", device);
+	unlink(device);
+	if (bind(server_sockfd, (struct sockaddr*)&sock_addr, sizeof(sock_addr)) != 0) {
+		close(server_sockfd);
+		return -2; // error
+	}
+
+	if (listen(server_sockfd, 128) != 0) {
+		close(server_sockfd);
+		return -3; // error
+	}
+
+	if (pthread_create(&vmiserver_thread, NULL, vmiserver, NULL) !=0) {
+		close(server_sockfd);
+		return -4; // error
+	}
+	pthread_join(vmiserver_thread, NULL);
+
+	unlink(device);
+	return 0; // good
+}
 
 static void handle_connection(int fd)
 {
@@ -31,7 +64,7 @@ static void handle_connection(int fd)
 		if (recv(fd, &req, sizeof(req), 0) != sizeof(req)) {
 			return;
 		}
-		handle_request(&req);
+		vmis_handle_request(&req);
 	}
 	close(fd);
 }
@@ -54,17 +87,7 @@ static void *vmiserver(void *args)
 	close(server_sockfd);
 }
 
-void enable_sync_wait()
-{
-	return;
-}
-
-void disable_sync_wait()
-{
-	return;
-}
-
-void put_response(const uint8_t *buf, uint32_t size)
+void vmis_cb_put_response(const uint8_t *buf, uint32_t size)
 {
 	if (size > 0) {
 		uint32_t resp_len = size + sizeof(uint32_t);
@@ -80,7 +103,7 @@ void put_response(const uint8_t *buf, uint32_t size)
 	}
 }
 
-int read_virtual_memory(uint64_t va, uint32_t len, uint8_t *buffer)
+int vmis_cb_read_virtual_memory(uint64_t va, uint32_t len, uint8_t *buffer)
 {
 	static const uint8_t memory[48] = {
 		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -102,7 +125,7 @@ int read_virtual_memory(uint64_t va, uint32_t len, uint8_t *buffer)
 	return 0; // good
 }
 
-int read_register(int32_t reg_group, int32_t reg_id, uint64_t *reg_val)
+int vmis_cb_read_register(int32_t reg_group, int32_t reg_id, uint64_t *reg_val)
 {
 	typedef struct {
 		uint64_t rax;
@@ -220,39 +243,61 @@ int read_register(int32_t reg_group, int32_t reg_id, uint64_t *reg_val)
 	return -1;
 }
 
-int set_breakpoint(uint64_t va)
+int vmis_cb_set_breakpoint(uint64_t va)
 {
 	return -1;
 }
 
-int vmiserver_start(const char *device)
+// Dummy functions required for compilation
+
+void vmis_cb_enable_sync_wait()
 {
-	server_sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (server_sockfd < 0) {
-		return -1; // error
-	}
+	return;
+}
 
-	struct sockaddr_un sock_addr = {
-		.sun_family = AF_UNIX,
-	};
-	snprintf(sock_addr.sun_path, sizeof(sock_addr.sun_path), "%s", device);
-	unlink(device);
-	if (bind(server_sockfd, (struct sockaddr*)&sock_addr, sizeof(sock_addr)) != 0) {
-		close(server_sockfd);
-		return -2; // error
-	}
+void vmis_cb_disable_sync_wait()
+{
+	return;
+}
 
-	if (listen(server_sockfd, 128) != 0) {
-		close(server_sockfd);
-		return -3; // error
-	}
+int vmis_cb_remove_breakpoint(uint64_t va)
+{
+	unused(va);
+	return -1;
+}
 
-	if (pthread_create(&vmiserver_thread, NULL, vmiserver, NULL) !=0) {
-		close(server_sockfd);
-		return -4; // error
-	}
-	pthread_join(vmiserver_thread, NULL);
+int vmis_cb_remove_all_breakpoints(void)
+{
+	return -1;
+}
 
-	unlink(device);
-	return 0; // good
+int vmis_cb_set_watchpoint(uint64_t va, uint32_t len, int wp)
+{
+	unused(va); unused(len); unused(wp);
+	return -1;
+}
+
+int vmis_cb_remove_watchpoint(uint64_t va, uint32_t len)
+{
+	unused(va); unused(len); return -1;
+}
+
+int vmis_cb_remove_all_watchpoints(void)
+{
+	return -1;
+}
+
+int vmis_cb_pause_vm(void)
+{
+	return -1;
+}
+
+int vmis_cb_step_vm(void)
+{
+	return -1;
+}
+
+int vmis_cb_continue_async_vm(void)
+{
+	return -1;
 }
