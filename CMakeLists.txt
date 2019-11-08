@@ -99,10 +99,6 @@ install(FILES cmake/rvnvmicomm_client-config.cmake
 # Server
 ##################
 
-##################
-# Client
-##################
-
 add_library(rvnvmicomm_server
   src/server/vmiserver.c
 )
