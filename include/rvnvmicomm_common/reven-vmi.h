@@ -8,7 +8,7 @@ typedef enum x86_register_group_t {
 	SEG,
 	CTRL,
 	MSR,
-} x86_register_group_t;
+} vmi_x86_register_group_t;
 
 typedef enum x86_register_t {
 	// general purpose
@@ -48,7 +48,7 @@ typedef enum x86_register_t {
 	MSR_LSTAR = 0xc0000082,
 	MSR_GSBASE = 0xc0000101,
 	MSR_KERNELGSBASE = 0xc0000102,
-} x86_register_t;
+} vmi_x86_register_t;
 
 typedef enum request_type_t {
 	// break/watch points (set/remove)
@@ -63,7 +63,7 @@ typedef enum request_type_t {
 
 	// continue, pause, step
 	EXEC,
-} request_type_t;
+} vmi_request_type_t;
 
 typedef enum request_action_t {
 	SET,
@@ -74,7 +74,7 @@ typedef enum request_action_t {
 	STEP,
 	CONTINUE,
 	CONTINUE_ASYNC,
-} request_action_t;
+} vmi_request_action_t;
 
 typedef struct __attribute__((__packed__)) request_t {
 	struct __attribute__((__packed__)) {
@@ -91,4 +91,4 @@ typedef struct __attribute__((__packed__)) request_t {
 		};
 		uint32_t memory_size;
 	} request_data;
-} request_t;
+} vmi_request_t;
