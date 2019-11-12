@@ -3,6 +3,7 @@ project(test)
 
 find_package(Boost 1.49 COMPONENTS
     unit_test_framework
+    filesystem
 )
 
 if(NOT Boost_FOUND)
@@ -20,6 +21,7 @@ add_executable(test_start_stop_connect
 target_link_libraries(test_start_stop_connect
   PUBLIC
     Boost::boost
+    Boost::filesystem
 
   PRIVATE
     rvnvmicomm_client
@@ -42,6 +44,7 @@ add_executable(test_read_memory
 target_link_libraries(test_read_memory
   PUBLIC
     Boost::boost
+    Boost::filesystem
 
   PRIVATE
     rvnvmicomm_client
@@ -64,6 +67,7 @@ add_executable(test_read_register
 target_link_libraries(test_read_register
   PUBLIC
     Boost::boost
+    Boost::filesystem
 
   PRIVATE
     rvnvmicomm_client
