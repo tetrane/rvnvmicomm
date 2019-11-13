@@ -14,6 +14,8 @@
 #include <rvnvmicomm_server/vmiserver.h>
 #include <rvnvmicomm_client/vmiclient.h>
 
+#include "test_server_implem.h"
+
 #define unused(x) (void)x
 
 // implement server support functions
@@ -27,7 +29,7 @@ int vmis_start(const char *device)
 {
 	server_sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (server_sockfd < 0) {
-		return -1; // error
+		return -1;
 	}
 
 	struct sockaddr_un sock_addr = {
@@ -37,22 +39,24 @@ int vmis_start(const char *device)
 	unlink(device);
 	if (bind(server_sockfd, (struct sockaddr*)&sock_addr, sizeof(sock_addr)) != 0) {
 		close(server_sockfd);
-		return -2; // error
+		return -2;
 	}
 
 	if (listen(server_sockfd, 128) != 0) {
 		close(server_sockfd);
-		return -3; // error
+		return -3;
 	}
 
 	if (pthread_create(&vmiserver_thread, NULL, vmiserver, NULL) !=0) {
 		close(server_sockfd);
-		return -4; // error
+		return -4;
 	}
-	pthread_join(vmiserver_thread, NULL);
 
-	unlink(device);
-	return 0; // good
+	return 0;
+}
+
+void test_server_close() {
+	pthread_join(vmiserver_thread, NULL);
 }
 
 static void handle_connection(int fd)
