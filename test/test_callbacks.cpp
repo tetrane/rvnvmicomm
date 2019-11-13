@@ -10,88 +10,111 @@
 
 #include <unistd.h>
 
-BOOST_AUTO_TEST_CASE(test_read_memory)
+void check_filled_buffer(void* buffer, size_t size)
 {
-	path_creator path_creator;
+	uint8_t* buf = (uint8_t*)buffer;
+	for (uint64_t i=0; i < size; ++i)
+		BOOST_CHECK_EQUAL(buf[i], i & 0xff);
+}
+
+void check_last_callback(CallbackFunction func, uint64_t param_0 = 0, uint64_t param_1 = 0, uint64_t param_2 = 0)
+{
+	auto cb = get_last_callback();
+
+	BOOST_CHECK_EQUAL(cb.function, func);
+	BOOST_CHECK_EQUAL(cb.params[0], param_0);
+	BOOST_CHECK_EQUAL(cb.params[1], param_1);
+	BOOST_CHECK_EQUAL(cb.params[2], param_2);
+}
+
+BOOST_FIXTURE_TEST_CASE(test_read_memory, VmiClientServerFixture)
+{
 	int err;
 
-	err = vmis_start(path_creator.path());
-	BOOST_REQUIRE_EQUAL(err, 0);
-
-	while (access(path_creator.path(), F_OK) != 0) {
-		usleep(500);
-	}
-
-	int fd = -1;
-	err = vmic_connect(path_creator.path(), &fd);
-	BOOST_REQUIRE_EQUAL(err, 0);
-
 	uint32_t n = 0;
-	err = vmic_read_memory(fd, 0x4000, sizeof(n), (uint8_t *)&n);
+	err = vmic_read_memory(cfd(), 0x4000, sizeof(n), (uint8_t *)&n);
 	BOOST_REQUIRE_EQUAL(err, 0);
 	BOOST_CHECK_EQUAL(n, 0x03020100);
 
 	uint64_t m = 0;
-	err = vmic_read_memory(fd, 0x4010, sizeof(m), (uint8_t *)&m);
+	err = vmic_read_memory(cfd(), 0x4010, sizeof(m), (uint8_t *)&m);
 	BOOST_REQUIRE_EQUAL(err, 0);
 	BOOST_CHECK_EQUAL(m, 0x1716151413121110);
-
-	err = vmic_close(fd);
-	BOOST_REQUIRE_EQUAL(err, 0);
-
-	test_server_close();
 }
 
-BOOST_AUTO_TEST_CASE(test_read_register)
+BOOST_FIXTURE_TEST_CASE(test_read_register, VmiClientServerFixture)
 {
-	path_creator path_creator;
 	int err;
+	uint64_t result = 0;
 
-	err = vmis_start(path_creator.path());
+	set_cb_return_value(8); // Callback register reads 8 bytes
+
+	// Nominal cases
+	err = vmic_read_register(cfd(), GP, RAX, &result);
 	BOOST_REQUIRE_EQUAL(err, 0);
+	check_last_callback(VMI_CB_READ_REGISTER, GP, RAX);
+	check_filled_buffer(&result, sizeof(result)); // Buffer is correctly passed through pipe, tested only once.
 
-	while (access(path_creator.path(), F_OK) != 0) {
-		usleep(500);
-	}
-
-	int fd = -1;
-	err = vmic_connect(path_creator.path(), &fd);
+	// Other value
+	err = vmic_read_register(cfd(), GP, RCX, &result);
 	BOOST_REQUIRE_EQUAL(err, 0);
+	check_last_callback(VMI_CB_READ_REGISTER, GP, RCX);
 
-	uint64_t rax = 0;
-	err = vmic_read_register(fd, (uint32_t)GP, (uint32_t)RAX, &rax);
+	// Possibly negative argument
+	err = vmic_read_register(cfd(), MSR, MSR_KERNELGSBASE, &result);
 	BOOST_REQUIRE_EQUAL(err, 0);
-	BOOST_CHECK_EQUAL(rax, 0x0a);
+	check_last_callback(VMI_CB_READ_REGISTER, MSR, MSR_KERNELGSBASE);
 
-	err = vmic_close(fd);
-	BOOST_CHECK_EQUAL(err, 0);
+	// Segments are 32-bits
+	result = 0;
+	set_cb_return_value(4);
+	err = vmic_read_register(cfd(), SEG, SS, &result);
+	BOOST_REQUIRE_EQUAL(err, 0);
+	check_last_callback(VMI_CB_READ_REGISTER, SEG, SS);
+	check_filled_buffer(&result, sizeof(uint32_t));
 
-	test_server_close();
+	// Invalid registers
+	err = vmic_read_register(cfd(), GP, MSR_KERNELGSBASE + 1, &result);
+	BOOST_REQUIRE_NE(err, 0);
+	err = vmic_read_register(cfd(), MSR + 1, MSR_KERNELGSBASE, &result);
+	BOOST_REQUIRE_NE(err, 0);
+
+	// Callback error
+	set_cb_return_value(0);
+	err = vmic_read_register(cfd(), GP, MSR_KERNELGSBASE + 1, &result);
+	// BOOST_REQUIRE_EQUAL(err, REGISTER_READ_FAILED);
+
+	// Nominal case still works
+	set_cb_return_value(8);
+	err = vmic_read_register(cfd(), GP, RAX, &result);
+	BOOST_REQUIRE_EQUAL(err, 0);
+	check_last_callback(VMI_CB_READ_REGISTER, GP, RAX);
 }
 
-BOOST_AUTO_TEST_CASE(test_start_stop_vmi)
+
+BOOST_FIXTURE_TEST_CASE(test_read_register_size_failure, VmiClientServerFixture)
 {
-	path_creator path_creator;
 	int err;
+	uint64_t result = 0;
 
-	err = vmis_start(path_creator.path());
-	BOOST_REQUIRE_EQUAL(err, 0);
+	// Segments are 32-bits
+	set_cb_return_value(8);
+	err = vmic_read_register(cfd(), SEG, SS, &result);
+	BOOST_REQUIRE_NE(err, 0);
 
-	while (access(path_creator.path(), F_OK) != 0) {
-		usleep(500);
-	}
+	// Note: this is in its own separate tests, because once the client library receives bad data it cannot properly
+	// communicate with the server, i.e. the following test would now fail:
+	// set_cb_return_value(4);
+	// err = vmic_read_register(cfd(), SEG, SS, &result);
+	// BOOST_REQUIRE_EQUAL(err, 0);
+}
 
-	int fd = -1;
-	err = vmic_connect(path_creator.path(), &fd);
-	BOOST_REQUIRE_EQUAL(err, 0);
+BOOST_FIXTURE_TEST_CASE(test_start_stop_vmi, VmiClientServerFixture)
+{
+	int err;
 
 	// dummy request just to notify the test server to stop
-	err = vmic_continue_vm_async(fd);
-	BOOST_CHECK_NE(err, 0);
-
-	err = vmic_close(fd);
-	BOOST_REQUIRE_EQUAL(err, 0);
-
-	test_server_close();
+	// err = vmic_continue_vm_async(cfd());
+	// BOOST_CHECK_NE(err, 0);
 }
 

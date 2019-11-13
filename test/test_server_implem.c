@@ -25,6 +25,12 @@ static int client_sockfd = -1;
 static pthread_t vmiserver_thread;
 static void *vmiserver(void *args);
 
+static CallbackCalled last_callback;
+static int cb_value_to_return;
+
+void set_last_callback(CallbackFunction func, uint64_t param_1, uint64_t param_2, uint64_t param_3);
+void fill_buffer(void* buffer, size_t size);
+
 int vmis_start(const char *device)
 {
 	server_sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -51,6 +57,9 @@ int vmis_start(const char *device)
 		close(server_sockfd);
 		return -4;
 	}
+
+	reset_last_callback();
+	set_cb_return_value(0);
 
 	return 0;
 }
@@ -109,6 +118,8 @@ void vmis_cb_put_response(const uint8_t *buf, uint32_t size)
 
 int vmis_cb_read_virtual_memory(uint64_t va, uint32_t len, uint8_t *buffer)
 {
+	set_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, len, 0);
+
 	static const uint8_t memory[48] = {
 		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
 		0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
@@ -131,177 +142,118 @@ int vmis_cb_read_virtual_memory(uint64_t va, uint32_t len, uint8_t *buffer)
 
 int vmis_cb_read_register(int32_t reg_group, int32_t reg_id, uint64_t *reg_val)
 {
-	typedef struct {
-		uint64_t rax;
-		uint64_t rcx;
-		uint64_t rdx;
-		uint64_t rbx;
-		uint64_t rsp;
-		uint64_t rbp;
-		uint64_t rsi;
-		uint64_t rdi;
-		uint64_t r8;
-		uint64_t r9;
-		uint64_t r10;
-		uint64_t r11;
-		uint64_t r12;
-		uint64_t r13;
-		uint64_t r14;
-		uint64_t r15;
+	set_last_callback(VMI_CB_READ_REGISTER, (uint32_t)reg_group, (uint32_t)reg_id, 0);
 
-		uint16_t es;
-		uint16_t cs;
-		uint16_t ss;
-		uint16_t ds;
-		uint16_t fs;
-		uint16_t gs;
+	fill_buffer(reg_val, sizeof(reg_val));
 
-		uint64_t cr0;
-		uint64_t cr1;
-		uint64_t cr2;
-		uint64_t cr3;
-		uint64_t cr4;
-
-		uint64_t msr_lstar;
-		uint64_t msr_gsbase;
-		uint64_t msr_kernelgsbase;
-	} AMD64Cpu;
-
-	AMD64Cpu cpu = {
-		.rax = 0x0a,
-		.rcx = 0x0c,
-		.rdx = 0x0d,
-		.rbx = 0x0b,
-		.rsp = 0x0e,
-		.rbp = 0x0f,
-		.cr0 = 0xc0,
-		.cr1 = 0xc1,
-		.cr2 = 0xc2,
-		.cr3 = 0xc3,
-		.cr4 = 0xc4
-	};
-
-	if (reg_group < (vmi_x86_register_group_t)GP) {
-		return -1;
-	}
-	if (reg_group > (vmi_x86_register_group_t)MSR) {
-		return -1;
-	}
-
-	if (reg_group == GP) {
-		switch (reg_id)
-		{
-		case RAX:
-			*reg_val = cpu.rax;
-			break;
-
-		case RCX:
-			*reg_val = cpu.rcx;
-			break;
-
-		case RDX:
-			*reg_val = cpu.rdx;
-			break;
-
-		case RSP:
-			*reg_val = cpu.rsp;
-			break;
-
-		case RBP:
-			*reg_val = cpu.rbp;
-			break;
-
-		default:
-			return -1;
-		}
-
-		return sizeof(uint64_t);
-	}
-
-	if (reg_group == CTRL) {
-		switch (reg_id)
-		{
-		case CR0:
-			*reg_val = cpu.cr0;
-			break;
-
-		case CR2:
-			*reg_val = cpu.cr2;
-			break;
-
-		case CR3:
-			*reg_val = cpu.cr3;
-			break;
-
-		case CR4:
-			*reg_val = cpu.cr4;
-			break;
-
-		default:
-			return -1;
-		}
-
-		return sizeof(uint64_t);
-	}
-
-	return -1;
+	return cb_value_to_return;
 }
 
 int vmis_cb_set_breakpoint(uint64_t va)
 {
-	return -1;
+	set_last_callback(VMI_CB_SET_BREAKPOINT, va, 0, 0);
+
+	return cb_value_to_return;
 }
 
 // Dummy functions required for compilation
 
 void vmis_cb_enable_sync_wait()
 {
+	set_last_callback(VMI_CB_ENABLE_SYNC_WAIT, 0, 0, 0);
+
 	return;
 }
 
 void vmis_cb_disable_sync_wait()
 {
+	set_last_callback(VMI_CB_DISABLE_SYNC_WAIT, 0, 0, 0);
+
 	return;
 }
 
 int vmis_cb_remove_breakpoint(uint64_t va)
 {
-	unused(va);
-	return -1;
+	set_last_callback(VMI_CB_REMOVE_BREAKPOINT, va, 0, 0);
+
+	return cb_value_to_return;
 }
 
 int vmis_cb_remove_all_breakpoints(void)
 {
-	return -1;
+	set_last_callback(VMI_CB_REMOVE_ALL_BREAKPOINTS, 0, 0, 0);
+
+	return cb_value_to_return;
 }
 
 int vmis_cb_set_watchpoint(uint64_t va, uint32_t len, int wp)
 {
-	unused(va); unused(len); unused(wp);
-	return -1;
+	set_last_callback(VMI_CB_SET_WATCHPOINT, va, len, (uint32_t)wp);
+
+	return cb_value_to_return;
 }
 
 int vmis_cb_remove_watchpoint(uint64_t va, uint32_t len)
 {
-	unused(va); unused(len); return -1;
+	set_last_callback(VMI_CB_REMOVE_WATCHPOINT, va, len, 0);
+
+	return cb_value_to_return;
 }
 
 int vmis_cb_remove_all_watchpoints(void)
 {
-	return -1;
+	set_last_callback(VMI_CB_REMOVE_ALL_WATCHPOINTS, 0, 0, 0);
+
+	return cb_value_to_return;
 }
 
 int vmis_cb_pause_vm(void)
 {
-	return -1;
+	set_last_callback(VMI_CB_PAUSE_VM, 0, 0, 0);
+
+	return cb_value_to_return;
 }
 
 int vmis_cb_step_vm(void)
 {
-	return -1;
+	set_last_callback(VMI_CB_STEP_VM, 0, 0, 0);
+
+	return cb_value_to_return;
 }
 
 int vmis_cb_continue_async_vm(void)
 {
-	return -1;
+	set_last_callback(VMI_CB_CONTINUE_ASYNC_VM, 0, 0, 0);
+
+	return cb_value_to_return;
+}
+
+CallbackCalled get_last_callback()
+{
+	return last_callback;
+}
+
+void set_last_callback(CallbackFunction func, uint64_t param_0, uint64_t param_1, uint64_t param_2) {
+	last_callback.function = func;
+	last_callback.params[0] = param_0;
+	last_callback.params[1] = param_1;
+	last_callback.params[2] = param_2;
+}
+
+void reset_last_callback()
+{
+	last_callback.function = VMI_CB_NONE;
+	memset(last_callback.params, 0, sizeof(last_callback.params));
+}
+
+void set_cb_return_value(int err)
+{
+	cb_value_to_return = err;
+}
+
+void fill_buffer(void* buffer, size_t size)
+{
+	uint8_t* buf = (uint8_t*)buffer;
+	for (uint64_t i=0; i < size; ++i)
+		buf[i] = i;
 }
