@@ -108,11 +108,17 @@ void vmis_handle_request(const vmi_request_t *req)
 		case STEP:
 			vmis_cb_enable_sync_wait();
 			ex_err = vmis_cb_step_vm();
+			if (ex_err)
+				break; // Immediate reponse on error
+
 			return; // no immediate response
 
 		case CONTINUE:
 			vmis_cb_enable_sync_wait();
 			ex_err = vmis_cb_continue_async_vm();
+			if (ex_err)
+				break; // Immediate reponse on error
+
 			return; // no immediate response
 
 		case CONTINUE_ASYNC:
