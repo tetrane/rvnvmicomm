@@ -365,7 +365,7 @@ static vmic_error_t execution(int fd, int act) {
 			return EXECUTION_CONTINUE_ASYNC_FAILED;
 
 		default: // never happen
-			break;
+			return DATA_BAD_RESPONSE;
 		}
 	}
 
