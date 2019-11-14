@@ -120,24 +120,9 @@ int vmis_cb_read_virtual_memory(uint64_t va, uint32_t len, uint8_t *buffer)
 {
 	set_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, len, 0);
 
-	static const uint8_t memory[48] = {
-		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
-		0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
-		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f
-	};
+	fill_buffer(buffer, len);
 
-	static const uint64_t base_va = 0x4000;
-	if (va < base_va || va >= base_va + sizeof(memory)) {
-		return -1;
-	}
-	if (va + len >= base_va + sizeof(memory)) {
-		return -1;
-	}
-
-	int offset = va - base_va;
-	memcpy(buffer, memory + offset, len);
-
-	return 0; // good
+	return cb_value_to_return;
 }
 
 int vmis_cb_read_register(int32_t reg_group, int32_t reg_id, uint64_t *reg_val)
@@ -193,9 +178,9 @@ int vmis_cb_set_watchpoint(uint64_t va, uint32_t len, int wp)
 	return cb_value_to_return;
 }
 
-int vmis_cb_remove_watchpoint(uint64_t va, uint32_t len)
+int vmis_cb_remove_watchpoint(uint64_t va)
 {
-	set_last_callback(VMI_CB_REMOVE_WATCHPOINT, va, len, 0);
+	set_last_callback(VMI_CB_REMOVE_WATCHPOINT, va, 0, 0);
 
 	return cb_value_to_return;
 }

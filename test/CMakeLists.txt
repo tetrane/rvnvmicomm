@@ -30,4 +30,4 @@ target_link_libraries(test_callbacks
 
 target_compile_definitions(test_callbacks PRIVATE "BOOST_TEST_DYN_LINK")
 
-add_test(rvnvmicomm::start_stop_connect test_callbacks)
+add_test(rvnvmicomm::test_callbacks test_callbacks)

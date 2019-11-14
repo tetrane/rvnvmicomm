@@ -31,15 +31,38 @@ BOOST_FIXTURE_TEST_CASE(test_read_memory, VmiClientServerFixture)
 {
 	int err;
 
-	uint32_t n = 0;
-	err = vmic_read_memory(cfd(), 0x4000, sizeof(n), (uint8_t *)&n);
-	BOOST_REQUIRE_EQUAL(err, 0);
-	BOOST_CHECK_EQUAL(n, 0x03020100);
+	uint64_t va = 0xfffff00012345678;
+	uint8_t buffer[0x10000];
 
-	uint64_t m = 0;
-	err = vmic_read_memory(cfd(), 0x4010, sizeof(m), (uint8_t *)&m);
+	set_cb_return_value(0); // Callback read memory 0 = OK
+
+	// Nominal read
+	memset(buffer, 0, sizeof(buffer));
+	err = vmic_read_memory(cfd(), va, 0x10, buffer);
 	BOOST_REQUIRE_EQUAL(err, 0);
-	BOOST_CHECK_EQUAL(m, 0x1716151413121110);
+	check_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, 0x10);
+	check_filled_buffer(buffer, 0x10);
+
+	// Big read
+	memset(buffer, 0, sizeof(buffer));
+	err = vmic_read_memory(cfd(), va, 0x10000, buffer);
+	BOOST_REQUIRE_EQUAL(err, 0);
+	check_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, 0x10000);
+	check_filled_buffer(buffer, 0x10000);
+
+	// Read error
+	set_cb_return_value(-1);
+	err = vmic_read_memory(cfd(), va, 0x10, buffer);
+	BOOST_REQUIRE_NE(err, 0);
+	BOOST_REQUIRE_EQUAL(err, MEMORY_READ_FAILED);
+
+	// Nominal read still works after error
+	set_cb_return_value(0);
+	memset(buffer, 0, sizeof(buffer));
+	err = vmic_read_memory(cfd(), va, 0x10, buffer);
+	BOOST_REQUIRE_EQUAL(err, 0);
+	check_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, 0x10);
+	check_filled_buffer(buffer, 0x10);
 }
 
 BOOST_FIXTURE_TEST_CASE(test_read_register, VmiClientServerFixture)
@@ -82,9 +105,10 @@ BOOST_FIXTURE_TEST_CASE(test_read_register, VmiClientServerFixture)
 	// Callback error
 	set_cb_return_value(0);
 	err = vmic_read_register(cfd(), GP, MSR_KERNELGSBASE + 1, &result);
-	// BOOST_REQUIRE_EQUAL(err, REGISTER_READ_FAILED);
+	BOOST_REQUIRE_NE(err, 0);
+	// BOOST_REQUIRE_EQUAL(err, REGISTER_READ_FAILED); // TODO: should be this, is DATA_BAD_REQUEST instead.
 
-	// Nominal case still works
+	// Nominal case still works after error
 	set_cb_return_value(8);
 	err = vmic_read_register(cfd(), GP, RAX, &result);
 	BOOST_REQUIRE_EQUAL(err, 0);
@@ -107,14 +131,77 @@ BOOST_FIXTURE_TEST_CASE(test_read_register_size_failure, VmiClientServerFixture)
 	// set_cb_return_value(4);
 	// err = vmic_read_register(cfd(), SEG, SS, &result);
 	// BOOST_REQUIRE_EQUAL(err, 0);
+	// This is a TODO
 }
 
-BOOST_FIXTURE_TEST_CASE(test_start_stop_vmi, VmiClientServerFixture)
+BOOST_FIXTURE_TEST_CASE(test_other_callbacks, VmiClientServerFixture)
 {
 	int err;
+	uint64_t va = 0xfffff00012345678;
 
-	// dummy request just to notify the test server to stop
-	// err = vmic_continue_vm_async(cfd());
-	// BOOST_CHECK_NE(err, 0);
+	// All other callbacks that do not return data
+
+	// All OK
+	set_cb_return_value(0);
+
+	BOOST_CHECK_EQUAL(vmic_set_breakpoint(cfd(), va), 0);
+	check_last_callback(VMI_CB_SET_BREAKPOINT, va);
+
+	BOOST_CHECK_EQUAL(vmic_remove_breakpoint(cfd(), va), 0);
+	check_last_callback(VMI_CB_REMOVE_BREAKPOINT, va);
+
+	BOOST_CHECK_EQUAL(vmic_remove_all_breakpoints(cfd()), 0);
+	check_last_callback(VMI_CB_REMOVE_ALL_BREAKPOINTS);
+
+	BOOST_CHECK_EQUAL(vmic_set_read_watchpoint(cfd(), va, 0x10), 0);
+	check_last_callback(VMI_CB_SET_WATCHPOINT, va, 0x10, WP_READ);
+
+	BOOST_CHECK_EQUAL(vmic_set_write_watchpoint(cfd(), va, 0x10), 0);
+	check_last_callback(VMI_CB_SET_WATCHPOINT, va, 0x10, WP_WRITE);
+
+	BOOST_CHECK_EQUAL(vmic_remove_watchpoint(cfd(), va), 0);
+	check_last_callback(VMI_CB_REMOVE_WATCHPOINT, va);
+
+	// TODO: Missing call for remove all watchpoints
+
+	BOOST_CHECK_EQUAL(vmic_pause_vm(cfd()), 0);
+	check_last_callback(VMI_CB_PAUSE_VM);
+
+	// TODO: not testable, no mechanism on the server side allows explicitely to release the server
+	// apart from calling `put_typed_response` manually.
+	// BOOST_CHECK_EQUAL(vmic_step_vm(cfd()), 0);
+	// check_last_callback(VMI_CB_STEP_VM);
+
+	// Same. Besides, will require a way in the test server to check that sync callbacks have been called
+	// BOOST_CHECK_EQUAL(vmic_continue_vm(cfd()), 0);
+	// check_last_callback(VMI_CB_CONTINUE_ASYNC_VM);
+
+	BOOST_CHECK_EQUAL(vmic_continue_vm_async(cfd()), 0);
+	check_last_callback(VMI_CB_CONTINUE_ASYNC_VM);
+
+	// All errors
+	set_cb_return_value(-1);
+
+	BOOST_CHECK_EQUAL(vmic_set_breakpoint(cfd(), va), BREAKPOINT_SET_FAILED);
+
+	BOOST_CHECK_EQUAL(vmic_remove_breakpoint(cfd(), va), BREAKPOINT_REMOVE_FAILED);
+
+	BOOST_CHECK_EQUAL(vmic_remove_all_breakpoints(cfd()), BREAKPOINT_REMOVE_ALL_FAILED);
+
+	BOOST_CHECK_EQUAL(vmic_set_read_watchpoint(cfd(), va, 0x10), WATCHPOINT_READ_SET_FAILED);
+
+	BOOST_CHECK_EQUAL(vmic_set_write_watchpoint(cfd(), va, 0x10), WATCHPOINT_WRITE_SET_FAILED);
+
+	BOOST_CHECK_EQUAL(vmic_remove_watchpoint(cfd(), va), WATCHPOINT_REMOVE_FAILED);
+
+	// TODO: Missing call for remove all watchpoints
+
+	BOOST_CHECK_EQUAL(vmic_pause_vm(cfd()), EXECUTION_PAUSE_FAILED);
+
+	BOOST_CHECK_EQUAL(vmic_step_vm(cfd()), EXECUTION_STEP_FAILED);
+
+	BOOST_CHECK_EQUAL(vmic_continue_vm(cfd()), EXECUTION_CONTINUE_FAILED);
+
+	BOOST_CHECK_EQUAL(vmic_continue_vm_async(cfd()), EXECUTION_CONTINUE_ASYNC_FAILED);
 }
 
