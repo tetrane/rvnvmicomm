@@ -257,7 +257,7 @@ static vmic_error_t watchpoint(int fd, uint64_t va, uint32_t len, bool set_or_re
 	if (read_or_write) {
 		req.request_type = (vmi_request_type_t)WP_READ;
 	} else {
-		req.request_type = (vmi_request_type_t)WP_READ;
+		req.request_type = (vmi_request_type_t)WP_WRITE;
 	}
 
 	if (set_or_remove) {
@@ -311,8 +311,8 @@ vmic_error_t vmic_set_read_watchpoint(int fd, uint64_t va, uint32_t len) {
 	return watchpoint(fd, va, len, true, true);
 }
 
-vmic_error_t vmic_set_write_breakpoint(int fd, uint64_t va, uint32_t len) {
-	return watchpoint(fd, va, len, false, true);
+vmic_error_t vmic_set_write_watchpoint(int fd, uint64_t va, uint32_t len) {
+	return watchpoint(fd, va, len, true, false);
 }
 
 vmic_error_t vmic_remove_watchpoint(int fd, uint64_t va) {
