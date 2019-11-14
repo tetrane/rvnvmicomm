@@ -84,7 +84,7 @@ void vmis_handle_request(const vmi_request_t *req)
 			break;
 
 		case REM:
-			wp_err = vmis_cb_remove_watchpoint(req->request_data.virtual_address, req->request_data.memory_size);
+			wp_err = vmis_cb_remove_watchpoint(req->request_data.virtual_address);
 			break;
 
 		case REM_ALL:

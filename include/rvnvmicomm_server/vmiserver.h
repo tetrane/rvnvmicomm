@@ -25,7 +25,7 @@ extern int vmis_cb_remove_breakpoint(uint64_t va);
 extern int vmis_cb_remove_all_breakpoints(void);
 
 extern int vmis_cb_set_watchpoint(uint64_t va, uint32_t len, int wp);
-extern int vmis_cb_remove_watchpoint(uint64_t va, uint32_t len);
+extern int vmis_cb_remove_watchpoint(uint64_t va);
 extern int vmis_cb_remove_all_watchpoints(void);
 
 extern int vmis_cb_pause_vm(void);

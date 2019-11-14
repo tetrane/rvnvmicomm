@@ -315,8 +315,8 @@ vmic_error_t vmic_set_write_breakpoint(int fd, uint64_t va, uint32_t len) {
 	return watchpoint(fd, va, len, false, true);
 }
 
-vmic_error_t vmic_remove_watchpoint(int fd, uint64_t va, uint32_t len) {
-	return watchpoint(fd, va, len, false, false);
+vmic_error_t vmic_remove_watchpoint(int fd, uint64_t va) {
+	return watchpoint(fd, va, 0, false, false);
 }
 
 static vmic_error_t execution(int fd, int act) {

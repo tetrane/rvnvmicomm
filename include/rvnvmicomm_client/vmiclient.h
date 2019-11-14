@@ -59,7 +59,7 @@ extern vmic_error_t vmic_remove_all_breakpoints(int fd);
 extern vmic_error_t vmic_set_read_watchpoint(int fd, uint64_t va, uint32_t len);
 extern vmic_error_t vmic_set_write_breakpoint(int fd, uint64_t va, uint32_t len);
 
-extern vmic_error_t vmic_remove_watchpoint(int fd, uint64_t va, uint32_t len);
+extern vmic_error_t vmic_remove_watchpoint(int fd, uint64_t va);
 
 extern vmic_error_t vmic_pause_vm(int fd);
 extern vmic_error_t vmic_step_vm(int fd);
