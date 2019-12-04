@@ -10,15 +10,15 @@ extern "C" {
 
 // users should override following functions...
 
-extern int vmis_start(const char *device) __attribute__((nonnull(1)));
+extern int vmis_start(const char *device);
 
-extern void vmis_cb_enable_sync_wait();
-extern void vmis_cb_disable_sync_wait();
+extern void vmis_cb_enable_sync_wait(void);
+extern void vmis_cb_disable_sync_wait(void);
 
 extern void vmis_cb_put_response(const uint8_t *buf, uint32_t size);
 
-extern int vmis_cb_read_virtual_memory(uint64_t va, uint32_t len, uint8_t * buffer);
-extern int vmis_cb_read_register(int32_t reg_group, int32_t reg_id, uint64_t * reg_val);
+extern int vmis_cb_read_virtual_memory(uint64_t va, uint32_t len, uint8_t * buffer) __attribute__((nonnull(3)));
+extern int vmis_cb_read_register(int32_t reg_group, int32_t reg_id, uint64_t * reg_val) __attribute__((nonnull(3)));
 
 extern int vmis_cb_set_breakpoint(uint64_t va);
 extern int vmis_cb_remove_breakpoint(uint64_t va);
