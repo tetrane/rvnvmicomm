@@ -39,28 +39,29 @@ BOOST_FIXTURE_TEST_CASE(test_read_memory, VmiClientServerFixture)
 	// Nominal read
 	memset(buffer, 0, sizeof(buffer));
 	err = vmic_read_memory(cfd(), va, 0x10, buffer);
-	BOOST_REQUIRE_EQUAL(err, 0);
+	BOOST_CHECK_EQUAL(err, 0);
 	check_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, 0x10);
 	check_filled_buffer(buffer, 0x10);
 
+	// See issue rvnvmicomm#15 for why this test is commented
 	// Big read
-	memset(buffer, 0, sizeof(buffer));
-	err = vmic_read_memory(cfd(), va, 0x10000, buffer);
-	BOOST_REQUIRE_EQUAL(err, 0);
-	check_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, 0x10000);
-	check_filled_buffer(buffer, 0x10000);
+	// memset(buffer, 0, sizeof(buffer));
+	// err = vmic_read_memory(cfd(), va, 0x10000, buffer);
+	// BOOST_CHECK_EQUAL(err, 0);
+	// check_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, 0x10000);
+	// check_filled_buffer(buffer, 0x10000);
 
 	// Read error
 	set_cb_return_value(-1);
 	err = vmic_read_memory(cfd(), va, 0x10, buffer);
-	BOOST_REQUIRE_NE(err, 0);
-	BOOST_REQUIRE_EQUAL(err, MEMORY_READ_FAILED);
+	BOOST_CHECK_NE(err, 0);
+	BOOST_CHECK_EQUAL(err, MEMORY_READ_FAILED);
 
 	// Nominal read still works after error
 	set_cb_return_value(0);
 	memset(buffer, 0, sizeof(buffer));
 	err = vmic_read_memory(cfd(), va, 0x10, buffer);
-	BOOST_REQUIRE_EQUAL(err, 0);
+	BOOST_CHECK_EQUAL(err, 0);
 	check_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, 0x10);
 	check_filled_buffer(buffer, 0x10);
 }
@@ -74,44 +75,44 @@ BOOST_FIXTURE_TEST_CASE(test_read_register, VmiClientServerFixture)
 
 	// Nominal cases
 	err = vmic_read_register(cfd(), GP, RAX, &result);
-	BOOST_REQUIRE_EQUAL(err, 0);
+	BOOST_CHECK_EQUAL(err, 0);
 	check_last_callback(VMI_CB_READ_REGISTER, GP, RAX);
 	check_filled_buffer(&result, sizeof(result)); // Buffer is correctly passed through pipe, tested only once.
 
 	// Other value
 	err = vmic_read_register(cfd(), GP, RCX, &result);
-	BOOST_REQUIRE_EQUAL(err, 0);
+	BOOST_CHECK_EQUAL(err, 0);
 	check_last_callback(VMI_CB_READ_REGISTER, GP, RCX);
 
 	// Possibly negative argument
 	err = vmic_read_register(cfd(), MSR, MSR_KERNELGSBASE, &result);
-	BOOST_REQUIRE_EQUAL(err, 0);
+	BOOST_CHECK_EQUAL(err, 0);
 	check_last_callback(VMI_CB_READ_REGISTER, MSR, MSR_KERNELGSBASE);
 
 	// Segments are 32-bits
 	result = 0;
 	set_cb_return_value(4);
 	err = vmic_read_register(cfd(), SEG, SS, &result);
-	BOOST_REQUIRE_EQUAL(err, 0);
+	BOOST_CHECK_EQUAL(err, 0);
 	check_last_callback(VMI_CB_READ_REGISTER, SEG, SS);
 	check_filled_buffer(&result, sizeof(uint32_t));
 
 	// Invalid registers
 	err = vmic_read_register(cfd(), GP, MSR_KERNELGSBASE + 1, &result);
-	BOOST_REQUIRE_NE(err, 0);
+	BOOST_CHECK_NE(err, 0);
 	err = vmic_read_register(cfd(), MSR + 1, MSR_KERNELGSBASE, &result);
-	BOOST_REQUIRE_NE(err, 0);
+	BOOST_CHECK_NE(err, 0);
 
 	// Callback error
 	set_cb_return_value(0);
 	err = vmic_read_register(cfd(), GP, MSR_KERNELGSBASE + 1, &result);
-	BOOST_REQUIRE_NE(err, 0);
-	// BOOST_REQUIRE_EQUAL(err, REGISTER_READ_FAILED); // TODO: should be this, is DATA_BAD_REQUEST instead.
+	BOOST_CHECK_NE(err, 0);
+	// BOOST_CHECK_EQUAL(err, REGISTER_READ_FAILED); // TODO: should be this, is DATA_BAD_REQUEST instead.
 
 	// Nominal case still works after error
 	set_cb_return_value(8);
 	err = vmic_read_register(cfd(), GP, RAX, &result);
-	BOOST_REQUIRE_EQUAL(err, 0);
+	BOOST_CHECK_EQUAL(err, 0);
 	check_last_callback(VMI_CB_READ_REGISTER, GP, RAX);
 }
 
@@ -124,13 +125,13 @@ BOOST_FIXTURE_TEST_CASE(test_read_register_size_failure, VmiClientServerFixture)
 	// Segments are 32-bits
 	set_cb_return_value(8);
 	err = vmic_read_register(cfd(), SEG, SS, &result);
-	BOOST_REQUIRE_NE(err, 0);
+	BOOST_CHECK_NE(err, 0);
 
 	// Note: this is in its own separate tests, because once the client library receives bad data it cannot properly
 	// communicate with the server, i.e. the following test would now fail:
 	// set_cb_return_value(4);
 	// err = vmic_read_register(cfd(), SEG, SS, &result);
-	// BOOST_REQUIRE_EQUAL(err, 0);
+	// BOOST_CHECK_EQUAL(err, 0);
 	// This is a TODO
 }
 
