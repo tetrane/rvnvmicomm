@@ -69,6 +69,8 @@ vmic_error_t __attribute((nonnull(4))) vmic_read_register(int fd, unsigned reg_g
 		uint32_t value;
 	} seg_resp;
 
+	memset(&req, 0, sizeof(req));
+
 	req.request_type = (vmi_request_type_t)REG_READ;
 	if (reg_group > (vmi_x86_register_group_t)MSR) {
 		return DATA_BAD_REQUEST;
@@ -133,6 +135,8 @@ vmic_error_t __attribute((nonnull(4))) vmic_read_memory(int fd, uint64_t va, uin
 	ssize_t msg_buffer_length = 0;
 	uint32_t embedded_length = 0;
 
+	memset(&req, 0, sizeof(req));
+
 	req.request_type = (vmi_request_type_t)MEM_READ;
 	req.request_data.virtual_address = va;
 	req.request_data.memory_size = length;
@@ -148,6 +152,7 @@ vmic_error_t __attribute((nonnull(4))) vmic_read_memory(int fd, uint64_t va, uin
 	msg_len = recv_nonblock(fd, msg_buffer, msg_buffer_length);
 
 	if (msg_len < (ssize_t)sizeof(uint32_t)) {
+		free(msg_buffer);
 		return DATA_BAD_RESPONSE;
 	}
 
@@ -156,13 +161,16 @@ vmic_error_t __attribute((nonnull(4))) vmic_read_memory(int fd, uint64_t va, uin
 
 	if (msg_len == sizeof(uint32_t)) {
 		if (embedded_length == 0) {
+			free(msg_buffer);
 			return MEMORY_READ_FAILED;
 		} else {
+			free(msg_buffer);
 			return DATA_BAD_RESPONSE;
 		}
 	}
 
 	if (msg_len != msg_buffer_length || embedded_length != length) {
+		free(msg_buffer);
 		return DATA_BAD_RESPONSE;
 	}
 
@@ -178,6 +186,8 @@ static vmic_error_t breakpoint(int fd, uint64_t va, bool set_or_rem) {
 		uint32_t len;
 		int32_t value;
 	} resp;
+
+	memset(&req, 0, sizeof(req));
 
 	req.request_type = (vmi_request_type_t)BP;
 	if (set_or_rem) {
@@ -225,6 +235,8 @@ vmic_error_t vmic_remove_all_breakpoints(int fd) {
 		int32_t value;
 	} resp;
 
+	memset(&req, 0, sizeof(req));
+
 	req.request_type = (vmi_request_type_t)BP;
 	req.request_action = (vmi_request_action_t)REM_ALL;
 
@@ -253,6 +265,8 @@ static vmic_error_t watchpoint(int fd, uint64_t va, uint32_t len, bool set_or_re
 		uint32_t value;
 	} gp_resp;
 	int acc_bits;
+
+	memset(&req, 0, sizeof(req));
 
 	if (read_or_write) {
 		req.request_type = (vmi_request_type_t)WP_READ;
@@ -326,6 +340,8 @@ static vmic_error_t execution(int fd, int act) {
 		uint32_t len;
 		uint32_t value;
 	} gp_resp;
+
+	memset(&req, 0, sizeof(req));
 
 	switch ((vmi_request_action_t)act) {
 	case PAUSE:
