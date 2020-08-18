@@ -11,13 +11,58 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <sys/time.h>
 
 #include <rvnvmicomm_common/reven-vmi.h>
 #include <rvnvmicomm_client/vmiclient.h>
 
-static inline ssize_t recv_nonblock(int sockfd, void *buf, size_t len)
+#define MAX_RECV_TRY 7
+#define RECV_TIMEOUT 1
+
+// Read server response package [data length: 4 bytes] + [data buffer: data length]
+static ssize_t recv_nonblock(int sockfd, void *buf, size_t len)
 {
-	return recv(sockfd, buf, len, 0);
+	if (len < sizeof(uint32_t)) {
+		return -1;
+	}
+
+	// read the header containing the length of the rest
+	ssize_t recv_count = 0;
+	recv_count = recv(sockfd, buf, sizeof(uint32_t), 0);
+	if (recv_count != sizeof(uint32_t)) {
+		return -1;
+	}
+
+	// extract the length of data about being received
+	uint8_t *buf_u8 = (uint8_t*)buf;
+	uint32_t resp_data_len = buf_u8[0] + (buf_u8[1] << 8) + (buf_u8[2] << 16) + (buf_u8[3] << 24);
+
+	// read the rest
+	size_t data_offset = 0;
+	for (unsigned i = 0; i < MAX_RECV_TRY; i++) {
+		if (data_offset >= resp_data_len) {
+			break;
+		}
+
+		size_t rest_data_count = resp_data_len - data_offset;
+		ssize_t data_count = 0;
+
+		if (data_offset + sizeof(uint32_t) >= len) {
+			uint8_t tmp_buf_u8[512];
+			// receive data, but drop it later
+			data_count = recv(sockfd, tmp_buf_u8, 
+			                  sizeof(tmp_buf_u8) < rest_data_count ? sizeof(tmp_buf_u8) : rest_data_count, 0);
+		} else {
+			data_count = recv(sockfd, buf_u8 + sizeof(uint32_t) + data_offset, rest_data_count, 0);
+		}
+		if (data_count < 0) {
+			return data_count;
+		}
+		
+		data_offset += data_count;
+	}
+
+	return data_offset + sizeof(uint32_t);
 }
 
 vmic_error_t __attribute((nonnull(1), nonnull(2))) vmic_connect(const char * vmi_unix_socket, int *fd) {
@@ -40,6 +85,9 @@ vmic_error_t __attribute((nonnull(1), nonnull(2))) vmic_connect(const char * vmi
 		close(sockfd);
 		return VMI_SOCKET_CONNECT_FAILED;
 	}
+
+	struct timeval timeout = { .tv_sec = RECV_TIMEOUT, .tv_usec = 0 };
+	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
 	*fd = sockfd;
 	return OK;

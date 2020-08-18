@@ -43,13 +43,12 @@ BOOST_FIXTURE_TEST_CASE(test_read_memory, VmiClientServerFixture)
 	check_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, 0x10);
 	check_filled_buffer(buffer, 0x10);
 
-	// See issue rvnvmicomm#15 for why this test is commented
 	// Big read
-	// memset(buffer, 0, sizeof(buffer));
-	// err = vmic_read_memory(cfd(), va, 0x10000, buffer);
-	// BOOST_CHECK_EQUAL(err, 0);
-	// check_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, 0x10000);
-	// check_filled_buffer(buffer, 0x10000);
+	memset(buffer, 0, sizeof(buffer));
+	err = vmic_read_memory(cfd(), va, 0x10000, buffer);
+	BOOST_CHECK_EQUAL(err, 0);
+	check_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, 0x10000);
+	check_filled_buffer(buffer, 0x10000);
 
 	// Read error
 	set_cb_return_value(-1);
