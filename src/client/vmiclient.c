@@ -16,7 +16,7 @@
 #include <rvnvmicomm_common/reven-vmi.h>
 #include <rvnvmicomm_client/vmiclient.h>
 
-#define RECV_TIMEOUT 30
+static char send_error_msg_format[] = "rvnvmicomm: Encountered an error when sending a request: %s (%d)\n";
 
 // Read server response package [data length: 4 bytes] + [data buffer: data length]
 static ssize_t recv_nonblock(int sockfd, void *buf, size_t len)
@@ -28,8 +28,11 @@ static ssize_t recv_nonblock(int sockfd, void *buf, size_t len)
 	// read the header containing the length of the rest
 	uint32_t resp_data_len = 0;
 	ssize_t recv_count = recv(sockfd, &resp_data_len, sizeof(resp_data_len), MSG_WAITALL);
-	if (recv_count != sizeof(resp_data_len)) {
-		fprintf(stderr, "rvnvmicomm: Encountered an error when receiving size %ld\n", recv_count);
+	if (recv_count < 0) {
+		fprintf(stderr, "rvnvmicomm: Encountered an error when receiving size: %s (%d)\n", strerror(errno), errno);
+		return -1;
+	} else if(recv_count != sizeof(resp_data_len)) {
+		fprintf(stderr, "rvnvmicomm: Encountered an error when receiving size: unexpected size of %ld (expected %ld)\n", recv_count, sizeof(resp_data_len));
 		return -1;
 	}
 
@@ -43,15 +46,18 @@ static ssize_t recv_nonblock(int sockfd, void *buf, size_t len)
 	else if (resp_data_len == len - sizeof(resp_data_len)) {
 		data_count = recv(sockfd, (uint8_t*)buf + sizeof(resp_data_len), resp_data_len, MSG_WAITALL);
 
-		if (data_count < resp_data_len) {
-			fprintf(stderr, "rvnvmicomm: Encountered an error when receiving data %ld\n", data_count);
+		if (data_count < 0) {
+			fprintf(stderr, "rvnvmicomm: Encountered an error when receiving data: %s (%d)\n", strerror(errno), errno);
+			return data_count;
+		} else if (data_count < resp_data_len) {
+			fprintf(stderr, "rvnvmicomm: Encountered an error when receiving data: unexpected size of %ld (expected %d)\n", data_count, resp_data_len);
 			return data_count;
 		}
 
 		return data_count + sizeof(resp_data_len);
 	}
 	else {
-		fprintf(stderr, "rvnvmicomm: Size is different than expected %lu != %u\n", len, resp_data_len);
+		fprintf(stderr, "rvnvmicomm: Size is different than expected (%lu != %u)\n", len - sizeof(resp_data_len), resp_data_len);
 
 		uint8_t* tmp_buf = malloc(resp_data_len);
 		if (!tmp_buf) {
@@ -86,9 +92,6 @@ vmic_error_t __attribute((nonnull(1), nonnull(2))) vmic_connect(const char * vmi
 		close(sockfd);
 		return VMI_SOCKET_CONNECT_FAILED;
 	}
-
-	struct timeval timeout = { .tv_sec = RECV_TIMEOUT, .tv_usec = 0 };
-	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
 	*fd = sockfd;
 	return OK;
@@ -131,7 +134,10 @@ vmic_error_t __attribute((nonnull(4))) vmic_read_register(int fd, unsigned reg_g
 	req.request_data.register_id = (vmi_x86_register_t)reg_id;
 
 	msg_len = send(fd, &req, sizeof(req), 0);
-	if (msg_len != sizeof(req)) {
+	if (msg_len < 0) {
+		fprintf(stderr, send_error_msg_format, strerror(errno), errno);
+		return VMI_SOCKET_SEND_FAILED;
+	} else if (msg_len != sizeof(req)) {
 		return VMI_SOCKET_SEND_FAILED;
 	}
 
@@ -191,7 +197,10 @@ vmic_error_t __attribute((nonnull(4))) vmic_read_memory(int fd, uint64_t va, uin
 	req.request_data.memory_size = length;
 
 	msg_len = send(fd, &req, sizeof(req), 0);
-	if (msg_len != sizeof(req)) {
+	if (msg_len < 0) {
+		fprintf(stderr, send_error_msg_format, strerror(errno), errno);
+		return VMI_SOCKET_SEND_FAILED;
+	} else if (msg_len != sizeof(req)) {
 		return VMI_SOCKET_SEND_FAILED;
 	}
 
@@ -247,7 +256,10 @@ static vmic_error_t breakpoint(int fd, uint64_t va, bool set_or_rem) {
 	req.request_data.virtual_address = va;
 
 	msg_len = send(fd, &req, sizeof(req), 0);
-	if (msg_len != sizeof(req)) {
+	if (msg_len < 0) {
+		fprintf(stderr, send_error_msg_format, strerror(errno), errno);
+		return VMI_SOCKET_SEND_FAILED;
+	} else if (msg_len != sizeof(req)) {
 		return VMI_SOCKET_SEND_FAILED;
 	}
 
@@ -290,7 +302,10 @@ vmic_error_t vmic_remove_all_breakpoints(int fd) {
 	req.request_action = (vmi_request_action_t)REM_ALL;
 
 	msg_len = send(fd, &req, sizeof(req), 0);
-	if (msg_len != sizeof(req)) {
+	if (msg_len < 0) {
+		fprintf(stderr, send_error_msg_format, strerror(errno), errno);
+		return VMI_SOCKET_SEND_FAILED;
+	} else if (msg_len != sizeof(req)) {
 		return VMI_SOCKET_SEND_FAILED;
 	}
 
@@ -338,7 +353,10 @@ static vmic_error_t watchpoint(int fd, uint64_t va, uint32_t len, bool set_or_re
 	}
 
 	msg_len = send(fd, &req, sizeof(req), 0);
-	if (msg_len != sizeof(req)) {
+	if (msg_len < 0) {
+		fprintf(stderr, send_error_msg_format, strerror(errno), errno);
+		return VMI_SOCKET_SEND_FAILED;
+	} else if (msg_len != sizeof(req)) {
 		return VMI_SOCKET_SEND_FAILED;
 	}
 
@@ -384,7 +402,7 @@ vmic_error_t vmic_remove_watchpoint(int fd, uint64_t va) {
 
 static vmic_error_t execution(int fd, int act) {
 	vmi_request_t req;
-	size_t msg_len;
+	ssize_t msg_len;
 	struct __attribute__((__packed__)) gp_response_t {
 		uint32_t len;
 		uint32_t value;
@@ -406,7 +424,10 @@ static vmic_error_t execution(int fd, int act) {
 	req.request_action = (vmi_request_action_t)act;
 
 	msg_len = send(fd, &req, sizeof(req), 0);
-	if (msg_len != sizeof(req)) {
+	if (msg_len < 0) {
+		fprintf(stderr, send_error_msg_format, strerror(errno), errno);
+		return VMI_SOCKET_SEND_FAILED;
+	} else if (msg_len != sizeof(req)) {
 		return VMI_SOCKET_SEND_FAILED;
 	}
 
