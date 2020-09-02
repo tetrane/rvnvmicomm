@@ -87,9 +87,6 @@ vmic_error_t __attribute((nonnull(1), nonnull(2))) vmic_connect(const char * vmi
 		return VMI_SOCKET_CONNECT_FAILED;
 	}
 
-	struct timeval timeout = { .tv_sec = RECV_TIMEOUT, .tv_usec = 0 };
-	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
 	*fd = sockfd;
 	return OK;
 }
