@@ -1,7 +1,8 @@
-# rvnvmicomm
+# rvnvmicomm: a library for VMI communication.
 
-[![pipeline status](http://gitlab.tetrane.rd/tetrane/rvnvmicomm/badges/master/pipeline.svg)](http://gitlab.tetrane.rd/tetrane/rvnvmicomm/commits/master)
-[![coverage report](http://gitlab.tetrane.rd/tetrane/rvnvmicomm/badges/master/coverage.svg)](http://cdash.tetrane.rd/CDash/index.php?project=rvnvmicomm)
-[Coverage detail](http://tetrane.pages.gitlab.tetrane.rd/rvnvmicomm/)
+## License
 
-Library for VMI communication
+This work is dual-licensed X11 and GPL 2.0.
+You can choose between one of them if you use this work.
+
+`SPDX-License-Identifier: X11 OR GPL-2.0-only`
