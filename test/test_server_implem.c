@@ -129,7 +129,7 @@ int vmis_cb_read_register(int32_t reg_group, int32_t reg_id, uint64_t *reg_val)
 {
 	set_last_callback(VMI_CB_READ_REGISTER, (uint32_t)reg_group, (uint32_t)reg_id, 0);
 
-	fill_buffer(reg_val, sizeof(reg_val));
+	fill_buffer(reg_val, sizeof(*reg_val));
 
 	return cb_value_to_return;
 }
