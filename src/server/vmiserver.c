@@ -20,7 +20,7 @@ void vmis_handle_request(const vmi_request_t *req)
 			put_empty_response();
 		} else {
 			uint8_t *buf = malloc(mem_size);
-			if (vmis_cb_read_virtual_memory(req->request_data.virtual_address, mem_size, buf) >= 0) {
+			if (vmis_cb_read_physical_memory(req->request_data.address, mem_size, buf) >= 0) {
 				vmis_cb_put_response(buf, mem_size);
 			} else {
 				put_empty_response();
@@ -57,11 +57,11 @@ void vmis_handle_request(const vmi_request_t *req)
 		switch (req->request_action)
 		{
 		case SET:
-			bp_err = vmis_cb_set_breakpoint(req->request_data.virtual_address);
+			bp_err = vmis_cb_set_breakpoint(req->request_data.address);
 			break;
 
 		case REM:
-			bp_err = vmis_cb_remove_breakpoint(req->request_data.virtual_address);
+			bp_err = vmis_cb_remove_breakpoint(req->request_data.address);
 			break;
 
 		case REM_ALL:
@@ -80,11 +80,11 @@ void vmis_handle_request(const vmi_request_t *req)
 		switch (req->request_action)
 		{
 		case SET:
-			wp_err = vmis_cb_set_watchpoint(req->request_data.virtual_address, req->request_data.memory_size, req->request_type);
+			wp_err = vmis_cb_set_watchpoint(req->request_data.address, req->request_data.memory_size, req->request_type);
 			break;
 
 		case REM:
-			wp_err = vmis_cb_remove_watchpoint(req->request_data.virtual_address);
+			wp_err = vmis_cb_remove_watchpoint(req->request_data.address);
 			break;
 
 		case REM_ALL:

@@ -50,7 +50,7 @@ extern vmic_error_t vmic_connect(const char * vmi_unix_socket, int *fd);
 extern vmic_error_t vmic_close(int fd);
 
 extern vmic_error_t vmic_read_register(int fd, unsigned reg_group, unsigned reg_id, uint64_t *reg_value);
-extern vmic_error_t vmic_read_memory(int fd, uint64_t va, uint32_t length, uint8_t *buffer);
+extern vmic_error_t vmic_read_physical_memory(int fd, uint64_t addr, uint32_t length, uint8_t *buffer);
 
 extern vmic_error_t vmic_set_breakpoint(int fd, uint64_t va);
 extern vmic_error_t vmic_remove_breakpoint(int fd, uint64_t va);

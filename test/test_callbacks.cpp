@@ -31,37 +31,37 @@ BOOST_FIXTURE_TEST_CASE(test_read_memory, VmiClientServerFixture)
 {
 	int err;
 
-	uint64_t va = 0xfffff00012345678;
+	uint64_t addr = 0xfffff00012345678;
 	uint8_t buffer[0x10000];
 
 	set_cb_return_value(0); // Callback read memory 0 = OK
 
 	// Nominal read
 	memset(buffer, 0, sizeof(buffer));
-	err = vmic_read_memory(cfd(), va, 0x10, buffer);
+	err = vmic_read_physical_memory(cfd(), addr, 0x10, buffer);
 	BOOST_CHECK_EQUAL(err, 0);
-	check_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, 0x10);
+	check_last_callback(VMI_CB_READ_PHYSICAL_MEMORY, addr, 0x10);
 	check_filled_buffer(buffer, 0x10);
 
 	// Big read
 	memset(buffer, 0, sizeof(buffer));
-	err = vmic_read_memory(cfd(), va, 0x10000, buffer);
+	err = vmic_read_physical_memory(cfd(), addr, 0x10000, buffer);
 	BOOST_CHECK_EQUAL(err, 0);
-	check_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, 0x10000);
+	check_last_callback(VMI_CB_READ_PHYSICAL_MEMORY, addr, 0x10000);
 	check_filled_buffer(buffer, 0x10000);
 
 	// Read error
 	set_cb_return_value(-1);
-	err = vmic_read_memory(cfd(), va, 0x10, buffer);
+	err = vmic_read_physical_memory(cfd(), addr, 0x10, buffer);
 	BOOST_CHECK_NE(err, 0);
 	BOOST_CHECK_EQUAL(err, MEMORY_READ_FAILED);
 
 	// Nominal read still works after error
 	set_cb_return_value(0);
 	memset(buffer, 0, sizeof(buffer));
-	err = vmic_read_memory(cfd(), va, 0x10, buffer);
+	err = vmic_read_physical_memory(cfd(), addr, 0x10, buffer);
 	BOOST_CHECK_EQUAL(err, 0);
-	check_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, 0x10);
+	check_last_callback(VMI_CB_READ_PHYSICAL_MEMORY, addr, 0x10);
 	check_filled_buffer(buffer, 0x10);
 }
 

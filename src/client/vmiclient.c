@@ -183,7 +183,8 @@ vmic_error_t __attribute((nonnull(4))) vmic_read_register(int fd, unsigned reg_g
 	return OK;
 }
 
-vmic_error_t __attribute((nonnull(4))) vmic_read_memory(int fd, uint64_t va, uint32_t length, uint8_t *buffer) {
+vmic_error_t __attribute((nonnull(4)))
+vmic_read_physical_memory(int fd, uint64_t addr, uint32_t length, uint8_t *buffer) {
 	vmi_request_t req;
 	ssize_t msg_len = -1;
 	uint8_t *msg_buffer;
@@ -193,7 +194,7 @@ vmic_error_t __attribute((nonnull(4))) vmic_read_memory(int fd, uint64_t va, uin
 	memset(&req, 0, sizeof(req));
 
 	req.request_type = (vmi_request_type_t)MEM_READ;
-	req.request_data.virtual_address = va;
+	req.request_data.address = addr;
 	req.request_data.memory_size = length;
 
 	msg_len = send(fd, &req, sizeof(req), 0);
@@ -253,7 +254,7 @@ static vmic_error_t breakpoint(int fd, uint64_t va, bool set_or_rem) {
 	} else {
 		req.request_action = (vmi_request_action_t)REM;
 	}
-	req.request_data.virtual_address = va;
+	req.request_data.address = va;
 
 	msg_len = send(fd, &req, sizeof(req), 0);
 	if (msg_len < 0) {
@@ -344,7 +345,7 @@ static vmic_error_t watchpoint(int fd, uint64_t va, uint32_t len, bool set_or_re
 		req.request_action = (vmi_request_action_t)REM;
 	}
 
-	req.request_data.virtual_address = va;
+	req.request_data.address = va;
 
 	if (set_or_remove) {
 		req.request_data.memory_size = len;

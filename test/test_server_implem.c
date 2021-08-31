@@ -116,9 +116,9 @@ void vmis_cb_put_response(const uint8_t *buf, uint32_t size)
 	}
 }
 
-int vmis_cb_read_virtual_memory(uint64_t va, uint32_t len, uint8_t *buffer)
+int vmis_cb_read_physical_memory(uint64_t va, uint32_t len, uint8_t *buffer)
 {
-	set_last_callback(VMI_CB_READ_VIRTUAL_MEMORY, va, len, 0);
+	set_last_callback(VMI_CB_READ_PHYSICAL_MEMORY, va, len, 0);
 
 	fill_buffer(buffer, len);
 
