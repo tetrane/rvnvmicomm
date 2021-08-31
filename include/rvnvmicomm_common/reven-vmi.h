@@ -28,6 +28,16 @@ typedef enum x86_register_t {
 	R13,
 	R14,
 	R15,
+	EFLAGS,
+	PKRU,
+
+	// TR
+	GDTR_BASE,
+	GDTR_LIMIT,
+	LDTR_BASE,
+	LDTR_LIMIT,
+	IDTR_BASE,
+	IDTR_LIMIT,
 
 	// segment
 	ES = 0,
@@ -36,6 +46,12 @@ typedef enum x86_register_t {
 	DS,
 	FS,
 	GS,
+	ES_SHADOW,
+	CS_SHADOW,
+	SS_SHADOW,
+	DS_SHADOW,
+	FS_SHADOW,
+	GS_SHADOW,
 
 	// control
 	CR0 = 0,
@@ -45,7 +61,9 @@ typedef enum x86_register_t {
 	CR4,
 
 	// MSR
+	MSR_EFER = 0xc0000080,
 	MSR_LSTAR = 0xc0000082,
+	MSR_FSBASE = 0xc0000100,
 	MSR_GSBASE = 0xc0000101,
 	MSR_KERNELGSBASE = 0xc0000102,
 } vmi_x86_register_t;
