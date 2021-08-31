@@ -134,6 +134,15 @@ int vmis_cb_read_register(int32_t reg_group, int32_t reg_id, uint64_t *reg_val)
 	return cb_value_to_return;
 }
 
+int vmis_cb_read_cpuid_attributes(vmi_cpuid_values_t* attributes)
+{
+	set_last_callback(VMI_CB_READ_CPUID_ATTRIBUTES, 0, 0, 0);
+
+	fill_buffer(attributes, sizeof(*attributes));
+
+	return cb_value_to_return;
+}
+
 int vmis_cb_set_breakpoint(uint64_t va)
 {
 	set_last_callback(VMI_CB_SET_BREAKPOINT, va, 0, 0);

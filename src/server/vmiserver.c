@@ -52,6 +52,16 @@ void vmis_handle_request(const vmi_request_t *req)
 		return;
 	}
 
+	case ATT_READ: {
+		vmi_cpuid_values_t buf = {0};
+		if (vmis_cb_read_cpuid_attributes(&buf) == 0) {
+			put_typed_response(&buf);
+		} else {
+			put_empty_response();
+		}
+		return;
+	}
+
 	case BP: {
 		int bp_err;
 		switch (req->request_action)

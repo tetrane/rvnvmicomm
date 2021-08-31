@@ -79,6 +79,9 @@ typedef enum request_type_t {
 	MEM_READ,
 	REG_READ,
 
+	// CPUID attributes (read only, static)
+	ATT_READ,
+
 	// continue, pause, step
 	EXEC,
 } vmi_request_type_t;
@@ -110,3 +113,11 @@ typedef struct __attribute__((__packed__)) request_t {
 		uint32_t memory_size;
 	} request_data;
 } vmi_request_t;
+
+typedef struct __attribute__((__packed__)) cpuid_values_t {
+	uint32_t pat;
+	uint32_t pse36;
+	uint32_t pages_1gb;
+	uint32_t max_phy_addr;
+	uint32_t max_lin_addr;
+} vmi_cpuid_values_t;

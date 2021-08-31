@@ -238,6 +238,38 @@ vmic_read_physical_memory(int fd, uint64_t addr, uint32_t length, uint8_t *buffe
 	return OK;
 }
 
+vmic_error_t __attribute((nonnull(2)))
+vmic_read_cpuid_attributes(int fd, vmi_cpuid_values_t* attributes) {
+	vmi_request_t req;
+	ssize_t msg_len = -1;
+	struct __attribute__((__packed__)) response_t {
+		uint32_t len;
+		vmi_cpuid_values_t value;
+	} resp;
+
+	memset(&req, 0, sizeof(req));
+
+	req.request_type = (vmi_request_type_t)ATT_READ;
+
+	msg_len = send(fd, &req, sizeof(req), 0);
+	if (msg_len < 0) {
+		fprintf(stderr, send_error_msg_format, strerror(errno), errno);
+		return VMI_SOCKET_SEND_FAILED;
+	} else if (msg_len != sizeof(req)) {
+		return VMI_SOCKET_SEND_FAILED;
+	}
+
+	// type punning
+	msg_len = recv_nonblock(fd, &resp, sizeof(resp));
+	if (msg_len != sizeof(resp) || resp.len != sizeof(resp.value)) {
+		return DATA_BAD_RESPONSE;
+	}
+
+	memcpy(attributes, &resp.value, sizeof(resp.value));
+
+	return OK;
+}
+
 static vmic_error_t breakpoint(int fd, uint64_t va, bool set_or_rem) {
 	vmi_request_t req;
 	ssize_t msg_len = -1;

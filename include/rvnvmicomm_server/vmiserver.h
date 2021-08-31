@@ -19,6 +19,7 @@ extern void vmis_cb_put_response(const uint8_t *buf, uint32_t size);
 
 extern int vmis_cb_read_physical_memory(uint64_t addr, uint32_t len, uint8_t * buffer) __attribute__((nonnull(3)));
 extern int vmis_cb_read_register(int32_t reg_group, int32_t reg_id, uint64_t * reg_val) __attribute__((nonnull(3)));
+extern int vmis_cb_read_cpuid_attributes(vmi_cpuid_values_t* attributes) __attribute__((nonnull(1)));
 
 extern int vmis_cb_set_breakpoint(uint64_t va);
 extern int vmis_cb_remove_breakpoint(uint64_t va);

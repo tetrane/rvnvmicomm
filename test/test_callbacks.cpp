@@ -115,7 +115,6 @@ BOOST_FIXTURE_TEST_CASE(test_read_register, VmiClientServerFixture)
 	check_last_callback(VMI_CB_READ_REGISTER, GP, RAX);
 }
 
-
 BOOST_FIXTURE_TEST_CASE(test_read_register_size_failure, VmiClientServerFixture)
 {
 	int err;
@@ -132,6 +131,17 @@ BOOST_FIXTURE_TEST_CASE(test_read_register_size_failure, VmiClientServerFixture)
 	// err = vmic_read_register(cfd(), SEG, SS, &result);
 	// BOOST_CHECK_EQUAL(err, 0);
 	// This is a TODO
+}
+
+BOOST_FIXTURE_TEST_CASE(test_read_cpuid_attributes, VmiClientServerFixture)
+{
+	int err;
+	vmi_cpuid_values_t result = {0};
+
+	set_cb_return_value(0);
+	BOOST_CHECK_EQUAL(vmic_read_cpuid_attributes(cfd(), &result), 0);
+	check_last_callback(VMI_CB_READ_CPUID_ATTRIBUTES);
+	check_filled_buffer(&result, sizeof(result));
 }
 
 BOOST_FIXTURE_TEST_CASE(test_other_callbacks, VmiClientServerFixture)
