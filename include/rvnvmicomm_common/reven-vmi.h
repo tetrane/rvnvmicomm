@@ -104,7 +104,7 @@ typedef struct __attribute__((__packed__)) request_t {
 	};
 	struct __attribute__((__packed__)) {
 		union {
-			uint64_t address;
+			uint64_t address; // Can be virtual or physical, depending on request
 			struct __attribute__((__packed__)) {
 				uint32_t register_group;
 				uint32_t register_id;
