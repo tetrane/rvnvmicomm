@@ -98,6 +98,7 @@ static void *vmiserver(void *args)
 	}
 
 	close(server_sockfd);
+	return 0;
 }
 
 void vmis_cb_put_response(const uint8_t *buf, uint32_t size)

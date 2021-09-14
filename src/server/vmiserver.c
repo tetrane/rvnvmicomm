@@ -53,7 +53,7 @@ void vmis_handle_request(const vmi_request_t *req)
 	}
 
 	case ATT_READ: {
-		vmi_cpuid_values_t buf = {0};
+		vmi_cpuid_values_t buf = {};
 		if (vmis_cb_read_cpuid_attributes(&buf) == 0) {
 			put_typed_response(&buf);
 		} else {
