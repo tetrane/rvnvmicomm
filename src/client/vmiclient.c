@@ -19,7 +19,7 @@
 static char send_error_msg_format[] = "rvnvmicomm: Encountered an error when sending a request: %s (%d)\n";
 
 // Read server response package [data length: 4 bytes] + [data buffer: data length]
-static ssize_t recv_nonblock(int sockfd, void *buf, size_t len)
+static ssize_t recv_block(int sockfd, void *buf, size_t len)
 {
 	if (len < sizeof(uint32_t)) {
 		return -1;
@@ -147,7 +147,7 @@ vmic_error_t __attribute((nonnull(4))) vmic_read_register(int fd, unsigned reg_g
 		case CTRL:
 		case MSR:
 			// type punning
-			msg_len = recv_nonblock(fd, &gp_resp, sizeof(gp_resp));
+			msg_len = recv_block(fd, &gp_resp, sizeof(gp_resp));
 			if (msg_len != sizeof(gp_resp)) {
 				return DATA_BAD_RESPONSE;
 			}
@@ -162,7 +162,7 @@ vmic_error_t __attribute((nonnull(4))) vmic_read_register(int fd, unsigned reg_g
 
 		case SEG:
 			// type punning
-			msg_len = recv_nonblock(fd, &seg_resp, sizeof(seg_resp));
+			msg_len = recv_block(fd, &seg_resp, sizeof(seg_resp));
 			if (msg_len != sizeof(seg_resp)) {
 				return DATA_BAD_RESPONSE;
 			}
@@ -208,7 +208,7 @@ vmic_read_physical_memory(int fd, uint64_t addr, uint32_t length, uint8_t *buffe
 	// buffer: [data length: 4 bytes] + [data buffer: data length]
 	msg_buffer_length = sizeof(uint32_t) + length;
 	msg_buffer = malloc(msg_buffer_length);
-	msg_len = recv_nonblock(fd, msg_buffer, msg_buffer_length);
+	msg_len = recv_block(fd, msg_buffer, msg_buffer_length);
 
 	if (msg_len < (ssize_t)sizeof(uint32_t)) {
 		free(msg_buffer);
@@ -260,7 +260,7 @@ vmic_read_cpuid_attributes(int fd, vmi_cpuid_values_t* attributes) {
 	}
 
 	// type punning
-	msg_len = recv_nonblock(fd, &resp, sizeof(resp));
+	msg_len = recv_block(fd, &resp, sizeof(resp));
 	if (msg_len != sizeof(resp) || resp.len != sizeof(resp.value)) {
 		return DATA_BAD_RESPONSE;
 	}
@@ -297,7 +297,7 @@ static vmic_error_t breakpoint(int fd, uint64_t va, bool set_or_rem) {
 	}
 
 	// type punning
-	msg_len = recv_nonblock(fd, &resp, sizeof(resp));
+	msg_len = recv_block(fd, &resp, sizeof(resp));
 	if (msg_len != sizeof(resp) || resp.len != sizeof(resp.value)) {
 		return DATA_BAD_RESPONSE;
 	}
@@ -342,7 +342,7 @@ vmic_error_t vmic_remove_all_breakpoints(int fd) {
 		return VMI_SOCKET_SEND_FAILED;
 	}
 
-	msg_len = recv_nonblock(fd, &resp, sizeof(resp));
+	msg_len = recv_block(fd, &resp, sizeof(resp));
 	if (msg_len != sizeof(resp) || resp.len != sizeof(resp.value)) {
 		return DATA_BAD_RESPONSE;
 	}
@@ -394,7 +394,7 @@ static vmic_error_t watchpoint(int fd, uint64_t va, uint32_t len, bool set_or_re
 	}
 
 	// type punning
-	msg_len = recv_nonblock(fd, &gp_resp, sizeof(gp_resp));
+	msg_len = recv_block(fd, &gp_resp, sizeof(gp_resp));
 	if (msg_len != sizeof(gp_resp) || gp_resp.len != sizeof(gp_resp.value)) {
 		return DATA_BAD_RESPONSE;
 	}
@@ -464,7 +464,7 @@ static vmic_error_t execution(int fd, int act) {
 		return VMI_SOCKET_SEND_FAILED;
 	}
 
-	msg_len = recv_nonblock(fd, &gp_resp, sizeof(gp_resp));
+	msg_len = recv_block(fd, &gp_resp, sizeof(gp_resp));
 	if (msg_len != sizeof(gp_resp) || gp_resp.len != sizeof(gp_resp.value)) {
 		return DATA_BAD_RESPONSE;
 	}
