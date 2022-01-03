@@ -95,6 +95,7 @@ typedef enum request_action_t {
 	STEP,
 	CONTINUE,
 	CONTINUE_ASYNC,
+	STATUS,
 } vmi_request_action_t;
 
 typedef struct __attribute__((__packed__)) request_t {

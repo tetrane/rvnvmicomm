@@ -448,6 +448,7 @@ static vmic_error_t execution(int fd, int act) {
 	case STEP:
 	case CONTINUE:
 	case CONTINUE_ASYNC:
+	case STATUS:
 		break;
 	default:
 		return DATA_BAD_REQUEST;
@@ -467,6 +468,15 @@ static vmic_error_t execution(int fd, int act) {
 	msg_len = recv_block(fd, &gp_resp, sizeof(gp_resp));
 	if (msg_len != sizeof(gp_resp) || gp_resp.len != sizeof(gp_resp.value)) {
 		return DATA_BAD_RESPONSE;
+	}
+
+	// If requesting status, return code contains VM status,
+	// Otherwise contains command execution status (0 for OK)
+	if ((vmi_request_action_t)act == STATUS) {
+		if (gp_resp.value >= 16 /*RUN_STATE_MAX*/) {
+			return EXECUTION_STATUS_FAILED;
+		}
+		return gp_resp.value;
 	}
 
 	if (gp_resp.value != 0) {
@@ -505,4 +515,8 @@ vmic_error_t vmic_continue_vm(int fd) {
 
 vmic_error_t vmic_continue_vm_async(int fd) {
 	return execution(fd, (vmi_request_action_t)CONTINUE_ASYNC);
+}
+
+vmic_run_state_t vmic_status_vm(int fd) {
+	return (vmic_run_state_t)(execution(fd, (vmi_request_action_t)STATUS));
 }

@@ -135,6 +135,10 @@ void vmis_handle_request(const vmi_request_t *req)
 			ex_err = vmis_cb_continue_async_vm();
 			break; // response immediately
 
+		case STATUS:
+			ex_err = vmis_cb_run_state();
+		    break;
+
 		default:
 			return put_empty_response();
 		}

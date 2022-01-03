@@ -22,6 +22,7 @@ typedef enum {
 	VMI_CB_PAUSE_VM,
 	VMI_CB_STEP_VM,
 	VMI_CB_CONTINUE_ASYNC_VM,
+	VMI_CB_RUN_STATE,
 
 	VMI_CB_NONE
 } CallbackFunction;

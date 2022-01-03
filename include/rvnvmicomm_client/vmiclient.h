@@ -40,7 +40,28 @@ typedef enum vmic_error_t {
 	EXECUTION_STEP_FAILED,
 	EXECUTION_CONTINUE_FAILED,
 	EXECUTION_CONTINUE_ASYNC_FAILED,
+	EXECUTION_STATUS_FAILED,
 } vmic_error_t;
+
+typedef enum vmic_run_state_t {
+	RUN_STATE_DEBUG,
+	RUN_STATE_INMIGRATE,
+	RUN_STATE_INTERNAL_ERROR,
+	RUN_STATE_IO_ERROR,
+	RUN_STATE_PAUSED,
+	RUN_STATE_POSTMIGRATE,
+	RUN_STATE_PRELAUNCH,
+	RUN_STATE_FINISH_MIGRATE,
+	RUN_STATE_RESTORE_VM,
+	RUN_STATE_RUNNING,
+	RUN_STATE_SAVE_VM,
+	RUN_STATE_SHUTDOWN,
+	RUN_STATE_SUSPENDED,
+	RUN_STATE_WATCHDOG,
+	RUN_STATE_GUEST_PANICKED,
+	RUN_STATE_COLO,
+	RUN_STATE__MAX,
+} vmic_run_state_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,6 +89,8 @@ extern vmic_error_t vmic_pause_vm(int fd);
 extern vmic_error_t vmic_step_vm(int fd);
 extern vmic_error_t vmic_continue_vm(int fd);
 extern vmic_error_t vmic_continue_vm_async(int fd);
+
+extern vmic_run_state_t vmic_status_vm(int fd);
 
 #ifdef __cplusplus
 }

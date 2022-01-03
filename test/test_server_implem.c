@@ -223,6 +223,13 @@ int vmis_cb_continue_async_vm(void)
 	return cb_value_to_return;
 }
 
+int vmis_cb_run_state(void)
+{
+	set_last_callback(VMI_CB_RUN_STATE, 0, 0, 0);
+
+	return cb_value_to_return;
+}
+
 CallbackCalled get_last_callback()
 {
 	return last_callback;
