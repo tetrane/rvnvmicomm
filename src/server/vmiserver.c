@@ -8,7 +8,7 @@ static inline void put_empty_response(void) { vmis_cb_put_response(NULL, 0); }
 
 #define put_typed_response(resp) vmis_cb_put_response((const uint8_t*)resp, sizeof(*(resp)))
 
-void vmis_handle_request(const vmi_request_t *req)
+void vmis_handle_request(const vmi_request_t *req, uint8_t* buffer)
 {
 	vmis_cb_disable_sync_wait();
 
@@ -26,6 +26,17 @@ void vmis_handle_request(const vmi_request_t *req)
 				put_empty_response();
 			}
 			free(buf);
+		}
+		return;
+	}
+
+	case MEM_WRITE: {
+		uint32_t mem_size = req->attached_data_size;
+		if (mem_size == 0 || buffer == NULL) {
+			put_empty_response();
+		} else {
+			int bp_err = vmis_cb_write_physical_memory(req->request_data.address, mem_size, buffer);
+			put_typed_response(&bp_err);
 		}
 		return;
 	}

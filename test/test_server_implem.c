@@ -77,7 +77,16 @@ static void handle_connection(int fd)
 		if (recv(fd, &req, sizeof(req), 0) != sizeof(req)) {
 			return;
 		}
-		vmis_handle_request(&req);
+		void* buffer = 0;
+        if (req.attached_data_size != 0) {
+            buffer = malloc(req.attached_data_size);
+            if (recv(fd, buffer, req.attached_data_size, 0) != sizeof(req.attached_data_size)) {
+				free(buffer);
+                return;
+            }
+        }
+		vmis_handle_request(&req, buffer);
+		free(buffer);
 	}
 	close(fd);
 }
@@ -120,6 +129,15 @@ void vmis_cb_put_response(const uint8_t *buf, uint32_t size)
 int vmis_cb_read_physical_memory(uint64_t addr, uint32_t len, uint8_t *buffer)
 {
 	set_last_callback(VMI_CB_READ_PHYSICAL_MEMORY, addr, len, 0);
+
+	fill_buffer(buffer, len);
+
+	return cb_value_to_return;
+}
+
+int vmis_cb_write_physical_memory(uint64_t addr, uint32_t len, uint8_t *buffer)
+{
+	set_last_callback(VMI_CB_WRITE_PHYSICAL_MEMORY, addr, len, 0);
 
 	fill_buffer(buffer, len);
 

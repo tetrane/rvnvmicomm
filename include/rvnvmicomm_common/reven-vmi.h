@@ -75,9 +75,11 @@ typedef enum request_type_t {
 	WP_WRITE = 0x02,
 	WP_ACCESS = WP_READ | WP_WRITE,
 
-	// memory/registers (read only)
+	// memory/registers (read/write)
 	MEM_READ,
+	MEM_WRITE,
 	REG_READ,
+	REG_WRITE,
 
 	// CPUID attributes (read only, static)
 	ATT_READ,
@@ -113,6 +115,7 @@ typedef struct __attribute__((__packed__)) request_t {
 		};
 		uint32_t memory_size;
 	} request_data;
+	uint32_t attached_data_size;
 } vmi_request_t;
 
 typedef struct __attribute__((__packed__)) cpuid_values_t {
