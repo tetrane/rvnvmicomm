@@ -77,6 +77,7 @@ extern vmic_error_t vmic_read_physical_memory(int fd, uint64_t addr, uint32_t le
 extern vmic_error_t vmic_read_cpuid_attributes(int fd, struct cpuid_values_t* attributes);
 
 extern vmic_error_t vmic_write_physical_memory(int fd, uint64_t addr, uint32_t length, const uint8_t *buffer);
+extern vmic_error_t vmic_write_linear_memory(int fd, uint64_t addr, uint32_t length, const uint8_t *buffer);
 
 extern vmic_error_t vmic_set_breakpoint(int fd, uint64_t va);
 extern vmic_error_t vmic_remove_breakpoint(int fd, uint64_t va);

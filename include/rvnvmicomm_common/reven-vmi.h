@@ -78,6 +78,7 @@ typedef enum request_type_t {
 	// memory/registers (read/write)
 	MEM_READ,
 	MEM_WRITE,
+	MEM_WRITE_LINEAR,
 	REG_READ,
 	REG_WRITE,
 

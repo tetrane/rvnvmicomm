@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <rvnvmicomm_common/reven-vmi.h>
 #include <rvnvmicomm_server/vmiserver.h>
@@ -36,6 +37,17 @@ void vmis_handle_request(const vmi_request_t *req, uint8_t* buffer)
 			put_empty_response();
 		} else {
 			int bp_err = vmis_cb_write_physical_memory(req->request_data.address, mem_size, buffer);
+			put_typed_response(&bp_err);
+		}
+		return;
+	}
+
+	case MEM_WRITE_LINEAR: {
+		uint32_t mem_size = req->attached_data_size;
+		if (mem_size == 0 || buffer == NULL) {
+			put_empty_response();
+		} else {
+			int bp_err = vmis_cb_write_linear_memory(req->request_data.address, mem_size, buffer);
 			put_typed_response(&bp_err);
 		}
 		return;

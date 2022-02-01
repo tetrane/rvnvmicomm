@@ -144,6 +144,15 @@ int vmis_cb_write_physical_memory(uint64_t addr, uint32_t len, uint8_t *buffer)
 	return cb_value_to_return;
 }
 
+int vmis_cb_write_linear_memory(uint64_t addr, uint32_t len, uint8_t *buffer)
+{
+	set_last_callback(VMI_CB_WRITE_LINEAR_MEMORY, addr, len, 0);
+
+	fill_buffer(buffer, len);
+
+	return cb_value_to_return;
+}
+
 int vmis_cb_read_register(int32_t reg_group, int32_t reg_id, uint64_t *reg_val)
 {
 	set_last_callback(VMI_CB_READ_REGISTER, (uint32_t)reg_group, (uint32_t)reg_id, 0);

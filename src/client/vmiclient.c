@@ -314,6 +314,47 @@ vmic_write_physical_memory(int fd, uint64_t addr, uint32_t length, const uint8_t
 	return OK;
 }
 
+vmic_error_t __attribute((nonnull(4)))
+vmic_write_linear_memory(int fd, uint64_t addr, uint32_t length, const uint8_t *buffer) {
+	vmi_request_t req;
+	ssize_t msg_len = -1;
+	struct __attribute__((__packed__)) gp_response_t {
+		uint32_t len;
+		uint32_t value;
+	} gp_resp;
+
+	memset(&req, 0, sizeof(req));
+
+	req.request_type = (vmi_request_type_t)MEM_WRITE_LINEAR;
+	req.request_data.address = addr;
+	req.request_data.memory_size = length;
+	req.attached_data_size = length;
+
+	msg_len = send(fd, &req, sizeof(req), 0);
+	if (msg_len < 0) {
+		fprintf(stderr, send_error_msg_format, strerror(errno), errno);
+		return VMI_SOCKET_SEND_FAILED;
+	} else if (msg_len != sizeof(req)) {
+		return VMI_SOCKET_SEND_FAILED;
+	}
+
+	// Sending attachment
+	msg_len = send(fd, buffer, length, 0);
+	if (msg_len < 0) {
+		fprintf(stderr, send_error_msg_format, strerror(errno), errno);
+		return VMI_SOCKET_SEND_FAILED;
+	} else if (msg_len != length) {
+		return VMI_SOCKET_SEND_FAILED;
+	}
+
+	msg_len = recv_block(fd, &gp_resp, sizeof(gp_resp));
+	if (msg_len != sizeof(gp_resp) || gp_resp.len != sizeof(gp_resp.value)) {
+		return DATA_BAD_RESPONSE;
+	}
+
+	return OK;
+}
+
 static vmic_error_t breakpoint(int fd, uint64_t va, bool set_or_rem) {
 	vmi_request_t req;
 	ssize_t msg_len = -1;
