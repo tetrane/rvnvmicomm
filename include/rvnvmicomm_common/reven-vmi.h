@@ -6,6 +6,7 @@ typedef enum x86_register_group_t {
 	GP,
 	PC,
 	SEG,
+	SHADOW_SEG,
 	CTRL,
 	MSR,
 } vmi_x86_register_group_t;
@@ -46,7 +47,9 @@ typedef enum x86_register_t {
 	DS,
 	FS,
 	GS,
-	ES_SHADOW,
+
+	// shadow segment
+	ES_SHADOW = 0,
 	CS_SHADOW,
 	SS_SHADOW,
 	DS_SHADOW,

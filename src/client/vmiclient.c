@@ -121,6 +121,11 @@ vmic_error_t __attribute((nonnull(4))) vmic_read_register(int fd, unsigned reg_g
 		uint32_t value;
 	} seg_resp;
 
+	struct __attribute__((__packed__)) shadow_seg_response_t {
+		uint32_t len;
+		uint64_t value;
+	} shadow_seg_resp;
+
 	memset(&req, 0, sizeof(req));
 
 	req.request_type = (vmi_request_type_t)REG_READ;
@@ -173,6 +178,21 @@ vmic_error_t __attribute((nonnull(4))) vmic_read_register(int fd, unsigned reg_g
 				return DATA_BAD_RESPONSE;
 			}
 			*reg_value = seg_resp.value;
+			break;
+
+		case SHADOW_SEG:
+			// type punning
+			msg_len = recv_block(fd, &shadow_seg_resp, sizeof(shadow_seg_resp));
+			if (msg_len != sizeof(shadow_seg_resp)) {
+				return DATA_BAD_RESPONSE;
+			}
+			if (shadow_seg_resp.len == 0) {
+				return REGISTER_READ_FAILED;
+			}
+			if (shadow_seg_resp.len != sizeof(shadow_seg_resp.value)) {
+				return DATA_BAD_RESPONSE;
+			}
+			*reg_value = shadow_seg_resp.value;
 			break;
 
 		default: // never happens
