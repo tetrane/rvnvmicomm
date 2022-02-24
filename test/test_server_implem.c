@@ -78,13 +78,13 @@ static void handle_connection(int fd)
 			return;
 		}
 		void* buffer = 0;
-        if (req.attached_data_size != 0) {
-            buffer = malloc(req.attached_data_size);
-            if (recv(fd, buffer, req.attached_data_size, 0) != sizeof(req.attached_data_size)) {
+		if (req.attached_data_size != 0) {
+			buffer = malloc(req.attached_data_size);
+			if (recv(fd, buffer, req.attached_data_size, 0) != sizeof(req.attached_data_size)) {
 				free(buffer);
-                return;
-            }
-        }
+				return;
+			}
+		}
 		vmis_handle_request(&req, buffer);
 		free(buffer);
 	}
