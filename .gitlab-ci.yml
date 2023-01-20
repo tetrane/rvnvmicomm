@@ -1,3 +1,5 @@
+image: debian:stable
+
 stages:
     - build
     - test
